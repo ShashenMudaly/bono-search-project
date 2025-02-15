@@ -1,31 +1,85 @@
 using BonoSearch.Interfaces;
-using BonoSearch.Models.DTOs;   
+using BonoSearch.Models.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace BonoSearch.Services;
+
 
 public class SearchService : ISearchService
 {
     private readonly IMovieRepository _movieRepository;
+    private readonly ILogger<SearchService> _logger;
 
-    public SearchService(IMovieRepository movieRepository)
+    public SearchService(IMovieRepository movieRepository, ILogger<SearchService> logger)
     {
         _movieRepository = movieRepository;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<MovieDto>> SemanticSearchAsync(string query)
     {
-        // Add any business logic here if needed
-        return await _movieRepository.SemanticSearch(query);
+        try
+        {
+            _logger.LogInformation("Performing semantic search with query: {Query}", query);
+            
+            var results = await _movieRepository.SemanticSearch(query);
+            
+            if (!results.Any())
+            {
+                _logger.LogInformation("No results found for semantic search query: {Query}", query);
+            }
+            
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to perform semantic search with query: {Query}", query);
+            throw new ApplicationException("Failed to perform semantic search", ex);
+        }
     }
 
     public async Task<IEnumerable<MovieDto>> LexicalSearchAsync(string query)
     {
-        return await _movieRepository.LexicalSearch(query);
+        try
+        {
+            _logger.LogInformation("Performing lexical search with query: {Query}", query);
+            
+            var results = await _movieRepository.LexicalSearch(query);
+            
+            if (!results.Any())
+            {
+                _logger.LogInformation("No results found for lexical search query: {Query}", query);
+            }
+            
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to perform lexical search with query: {Query}", query);
+            throw new ApplicationException("Failed to perform lexical search", ex);
+        }
     }
 
     public async Task<IEnumerable<MovieDto>> HybridSearchAsync(string query)
     {
-        return await _movieRepository.HybridSearch(query);
+        try
+        {
+            _logger.LogInformation("Performing hybrid search with query: {Query}", query);
+            
+            var results = await _movieRepository.HybridSearch(query);
+            
+            if (!results.Any())
+            {
+                _logger.LogInformation("No results found for hybrid search query: {Query}", query);
+            }
+            
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to perform hybrid search with query: {Query}", query);
+            throw new ApplicationException("Failed to perform hybrid search", ex);
+        }
     }
 }
 
