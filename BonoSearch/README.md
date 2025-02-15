@@ -18,6 +18,8 @@ BonoSearch/
 │ └── MovieDto.cs # Data Transfer Object
 └── Repositories/
 └── MovieRepository.cs # Data access layer
+└── Services/
+└── MovieService.cs # Business logic layer
 
 ## Prerequisites
 

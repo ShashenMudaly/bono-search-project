@@ -60,8 +60,8 @@ public class MovieRepository : IMovieRepository
                        m.name AS Name, 
                        m.plot AS Plot
                 FROM movies m
-                WHERE to_tsvector(@language, m.plot) @@ websearch_to_tsquery(@language, @query)
-                ORDER BY ts_rank(to_tsvector(@language, m.plot), websearch_to_tsquery(@language, @query)) DESC
+                WHERE to_tsvector('english', m.plot) @@ websearch_to_tsquery('english', @query)
+                ORDER BY ts_rank(to_tsvector('english', m.plot), websearch_to_tsquery('english', @query)) DESC
                 LIMIT 5", parameters)
             .ToListAsync();
 
@@ -82,7 +82,7 @@ public class MovieRepository : IMovieRepository
             new("embedding_model", EMBEDDING_MODEL)
         };
 
-        return await _context.Set<MovieDto>()
+        var movies =  await _context.Set<Movie>()
             .FromSqlRaw(@"
                 WITH semantic_results AS (
                     SELECT m.id AS Id, 
@@ -95,9 +95,9 @@ public class MovieRepository : IMovieRepository
                     SELECT m.id AS Id, 
                            m.name AS Name, 
                            m.plot AS Plot,
-                           ts_rank(to_tsvector(@language, m.plot), websearch_to_tsquery(@language, @query)) as text_score
+                           ts_rank(to_tsvector('english', m.plot), websearch_to_tsquery('english', @query)) as text_score
                     FROM movies m
-                    WHERE to_tsvector(@language, m.plot) @@ websearch_to_tsquery(@language, @query)
+                    WHERE to_tsvector('english', m.plot) @@ websearch_to_tsquery('english', @query)
                 )
                 SELECT DISTINCT sr.Id, 
                               sr.Name, 
@@ -108,5 +108,12 @@ public class MovieRepository : IMovieRepository
                 ORDER BY (COALESCE(fr.text_score, 0) + sr.semantic_score) DESC
                 LIMIT 5", parameters)
             .ToListAsync();
+
+        return movies.Select(m => new MovieDto 
+        { 
+            Id = m.Id, 
+            Name = m.Name, 
+            Plot = m.Plot 
+        });
     }
 } 
