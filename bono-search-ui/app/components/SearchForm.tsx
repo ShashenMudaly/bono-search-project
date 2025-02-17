@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { SearchResults, SearchResult } from '@/app/components/SearchResults'
+import { LanguageService } from '@/app/services/languageService'
+import { SearchService } from '@/app/services/searchService'
 
 type SearchType = {
   id: string
@@ -18,38 +20,54 @@ export function SearchForm() {
   const [query, setQuery] = useState('')
   const [selectedType, setSelectedType] = useState<SearchType>(searchTypes[0])
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('');
+  const [translatedQuery, setTranslatedQuery] = useState<string>('');
+
+  const languageService = new LanguageService();
+  const searchService = new SearchService();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearchResults([]);
+    setTranslatedQuery('');
     
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/Search/${selectedType.id}?query=${encodeURIComponent(query)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+    const languageResult = await languageService.detectLanguage(query);
+    if (languageResult) {
+      setDetectedLanguage(languageResult.language);
+      console.log(`Detected language: ${languageResult.language} (confidence: ${languageResult.score})`);
       
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
+      let searchQuery = query;
+      if (languageResult.language !== 'en' && languageResult.language !== 'unknown') {
+        const translationResult = await languageService.translateText(query, languageResult.language, 'en');
+        if (translationResult) {
+          searchQuery = translationResult.translatedText;
+          setTranslatedQuery(translationResult.translatedText);
+        }
       }
       
-      const data: Array<{ name: string; plot: string }> = await response.json();
-      setSearchResults(data.map(item => ({
-        title: item.name,
-        description: item.plot,
-        shortDescription: item.plot.length > 1000 
-          ? `${item.plot.substring(0, 1000)}...` 
-          : item.plot
-      })));
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
+      const results = await searchService.searchMovies(searchQuery, selectedType.id);
+      
+      // Translate plots back to the detected language if it's not English
+      const translatedResults = await Promise.all(
+        results.map(async (item) => {
+          let translatedPlot = item.plot;
+          if (languageResult.language !== 'en' && languageResult.language !== 'unknown') {
+            const plotTranslation = await languageService.translateText(item.plot, 'en', languageResult.language);
+            if (plotTranslation) {
+              translatedPlot = plotTranslation.translatedText;
+            }
+          }
+          return {
+            title: item.name,
+            description: translatedPlot,
+            shortDescription: translatedPlot.length > 1000 
+              ? `${translatedPlot.substring(0, 1000)}...` 
+              : translatedPlot
+          };
+        })
+      );
+      
+      setSearchResults(translatedResults);
     }
   }
 
@@ -66,11 +84,21 @@ export function SearchForm() {
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none"
           >
             Search
           </button>
         </div>
+        {detectedLanguage && (
+          <div className="text-sm text-gray-600">
+            Detected language: {detectedLanguage}
+            {translatedQuery && (
+              <span className="ml-2">
+                (Translated: "{translatedQuery}")
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex justify-center space-x-4">
           {searchTypes.map((type) => (
             <label
