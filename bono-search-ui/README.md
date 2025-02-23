@@ -9,6 +9,7 @@ A multilingual movie discovery application demonstrating different search method
 - Real-time translation of search queries to English
 - Automatic translation of movie plots to user's detected language
 - Supports multiple languages through integrated translation service
+- Translation caching system for improved performance
 
 ### Search Methodologies
 
@@ -37,7 +38,13 @@ A multilingual movie discovery application demonstrating different search method
 - Client-side state management using React hooks
 
 ### Services
-- `LanguageService`: Handles language detection and translation
+ `LanguageService`: Handles language detection and translation
+  - Automatic language detection
+  - Translation with caching support
+  - Response format includes translatedText, sourceLanguage, and targetLanguage
+- `CacheService`: Manages translation caching
+  - Stores and retrieves translated movie plots
+  - Improves performance by reducing duplicate translations
 - `SearchService`: Manages movie search operations across different methodologies
 
 ### Components

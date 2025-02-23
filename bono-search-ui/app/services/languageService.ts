@@ -9,6 +9,22 @@ export type TranslationResult = {
   targetLanguage: string
 }
 
+type DetectedLanguage = {
+  language: string;
+  score: number;
+}
+
+type Translation = {
+  text: string;
+  to: string;
+}
+
+type TranslateResponse = {
+  translatedText: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+}
+
 export class LanguageService {
   private readonly apiUrl: string;
 
@@ -68,21 +84,18 @@ export class LanguageService {
       );
 
       if (!response.ok) {
-        console.error('Translation failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url
-        });
-        throw new Error(`Translation failed: ${response.status} ${response.statusText}`);
+        console.error('Translation failed:', response.statusText);
+        return null;
       }
 
-      return await response.json();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Translation error:', {
-        message: errorMessage,
-        url,
-      });
+      const result: TranslateResponse = await response.json();
+      return {
+        translatedText: result.translatedText,
+        sourceLanguage: result.sourceLanguage,
+        targetLanguage: result.targetLanguage
+      };
+    } catch (error) {
+      console.error('Translation error:', error);
       return null;
     }
   }

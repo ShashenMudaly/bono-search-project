@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { SearchResults, SearchResult } from '@/app/components/SearchResults'
 import { LanguageService } from '@/app/services/languageService'
 import { SearchService } from '@/app/services/searchService'
+import { CacheService } from '@/app/services/cacheService'
 
 type SearchType = {
   id: string
@@ -39,8 +40,10 @@ export function SearchForm() {
       let searchQuery = query;
       if (languageResult.language !== 'en' && languageResult.language !== 'unknown') {
         const translationResult = await languageService.translateText(query, languageResult.language, 'en');
+        console.log(`translationResult: ${translationResult}`);
         if (translationResult) {
           searchQuery = translationResult.translatedText;
+          console.log(`searchQuery: ${searchQuery} (translated from ${languageResult.language})`);
           setTranslatedQuery(translationResult.translatedText);
         }
       }
@@ -48,13 +51,21 @@ export function SearchForm() {
       const results = await searchService.searchMovies(searchQuery, selectedType.id);
       
       // Translate plots back to the detected language if it's not English
-      const translatedResults = await Promise.all(
+      const translatedResults = (await Promise.all(
         results.map(async (item) => {
           let translatedPlot = item.plot;
           if (languageResult.language !== 'en' && languageResult.language !== 'unknown') {
-            const plotTranslation = await languageService.translateText(item.plot, 'en', languageResult.language);
-            if (plotTranslation) {
-              translatedPlot = plotTranslation.translatedText;
+            // Try to get cached translation first
+            const cacheService = new CacheService();
+            const cachedTranslation = await cacheService.getTranslatedPlot(item.name, languageResult.language);
+            if (cachedTranslation) {
+              translatedPlot = cachedTranslation;
+            } else {
+              const plotTranslation = await languageService.translateText(item.plot, 'en', languageResult.language);
+              if (plotTranslation) {
+                translatedPlot = plotTranslation.translatedText;
+                await cacheService.saveTranslatedPlot(item.name, languageResult.language, translatedPlot);
+              }
             }
           }
           return {
@@ -65,7 +76,7 @@ export function SearchForm() {
               : translatedPlot
           };
         })
-      );
+      )).filter((result): result is SearchResult => result !== undefined);
       
       setSearchResults(translatedResults);
     }
