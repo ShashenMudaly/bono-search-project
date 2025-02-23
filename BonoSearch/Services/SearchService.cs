@@ -81,6 +81,28 @@ public class SearchService : ISearchService
             throw new ApplicationException("Failed to perform hybrid search", ex);
         }
     }
+
+    public async Task<MovieDto?> GetMovieByNameAsync(string movieName)
+    {
+        try
+        {
+            _logger.LogInformation("Looking up movie with name: {MovieName}", movieName);
+            
+            var result = await _movieRepository.GetMovieByName(movieName);
+            
+            if (result == null)
+            {
+                _logger.LogInformation("No movie found with name: {MovieName}", movieName);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to lookup movie with name: {MovieName}", movieName);
+            throw new ApplicationException("Failed to lookup movie by name", ex);
+        }
+    }
 }
 
 // Add a comparer to handle deduplication

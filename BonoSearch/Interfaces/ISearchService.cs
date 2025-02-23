@@ -9,4 +9,5 @@ public interface ISearchService
     Task<IEnumerable<MovieDto>> SemanticSearchAsync(string query);
     Task<IEnumerable<MovieDto>> LexicalSearchAsync(string query);
     Task<IEnumerable<MovieDto>> HybridSearchAsync(string query);
+    Task<MovieDto?> GetMovieByNameAsync(string movieName);
 } 

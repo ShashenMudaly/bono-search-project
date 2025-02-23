@@ -59,3 +59,50 @@ dotnet run
 ## License
 
 [MIT License](LICENSE)
+
+## API Endpoints
+
+### Search Endpoints
+
+The API provides several search endpoints to find movies:
+
+#### Semantic Search
+```http
+GET /api/search/semantic?query={search_term}
+```
+Performs semantic search using embeddings to find movies based on meaning rather than exact matches.
+
+#### Lexical Search
+```http
+GET /api/search/lexical?query={search_term}
+```
+Performs traditional text-based search using PostgreSQL full-text search capabilities.
+
+#### Hybrid Search
+```http
+GET /api/search/hybrid?query={search_term}
+```
+Combines both semantic and lexical search approaches for more comprehensive results.
+
+#### Movie Lookup
+```http
+GET /api/search/movie?name={movie_name}
+```
+Looks up a specific movie by name using PostgreSQL's websearch_to_tsquery for flexible text matching.
+
+### Response Format
+
+All search endpoints return movie data in the following format:
+```json
+{
+    "id": "string",
+    "name": "string",
+    "plot": "string"
+}
+```
+
+### Error Responses
+
+- `400 Bad Request`: When the search query or movie name is empty
+- `404 Not Found`: When no movie is found (movie lookup endpoint only)
+- `500 Internal Server Error`: When an unexpected error occurs

@@ -77,4 +77,30 @@ public class SearchController : ControllerBase
             return StatusCode(500, "An error occurred while processing your request");
         }
     }
+
+    [HttpGet("movie")]
+    public async Task<ActionResult<MovieDto>> GetMovieByName([FromQuery] string name)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest("Movie name cannot be empty");
+            }
+
+            var result = await _searchService.GetMovieByNameAsync(name);
+            
+            if (result == null)
+            {
+                return NotFound($"No movie found with name: {name}");
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error looking up movie with name: {Name}", name);
+            return StatusCode(500, "An error occurred while processing your request");
+        }
+    }
 } 

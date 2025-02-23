@@ -116,4 +116,33 @@ public class MovieRepository : IMovieRepository
             Plot = m.Plot 
         });
     }
+
+    public async Task<MovieDto?> GetMovieByName(string movieName)
+    {
+        var parameters = new NpgsqlParameter[]
+        {
+            new("movie_name", movieName),
+            new("language", LANGUAGE)
+        };
+
+        var movie = await _context.Set<Movie>()
+            .FromSqlRaw(@"
+                SELECT m.id as ""Id"", 
+                       m.name as ""Name"", 
+                       m.plot as ""Plot""
+                FROM movies m
+                WHERE to_tsvector('english', m.name) @@ websearch_to_tsquery('english', @movie_name)
+                ORDER BY ts_rank(to_tsvector('english', m.name), websearch_to_tsquery('english', @movie_name))  DESC,  m.name ASC
+                LIMIT 1", parameters)
+            .FirstOrDefaultAsync();
+
+        if (movie == null) return null;
+
+        return new MovieDto 
+        { 
+            Id = movie.Id, 
+            Name = movie.Name, 
+            Plot = movie.Plot 
+        };
+    }
 } 
